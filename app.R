@@ -38,7 +38,7 @@ ui <- fluidPage(
   fluidRow(
 #    actionButton("add_button", "Add", icon("plus")),
     actionButton("edit_button", "Edit", icon("edit")),
-    actionButton("copy_button", "Copy", icon("copy")),
+#    actionButton("copy_button", "Copy", icon("copy")),
 #    actionButton("delete_button", "Delete", icon("trash-alt"))
   ),
   br(),
@@ -56,7 +56,7 @@ responses_df <- reactive({
   #make reactive to
   input$submit
   input$submit_edit
-  input$copy_button
+#  input$copy_button
 #  input$delete_button
   
   dbReadTable(pool, "responses_df")
@@ -126,10 +126,10 @@ formData <- reactive({
 })
 
 #Add data
-appendData <- function(data){
-  quary <- sqlAppendTable(pool, "responses_df", data, row.names = FALSE)
-  dbExecute(pool, quary)
-}
+# appendData <- function(data){
+#   quary <- sqlAppendTable(pool, "responses_df", data, row.names = FALSE)
+#   dbExecute(pool, quary)
+# }
 
 # observeEvent(input$add_button, priority = 20,{
 #     
@@ -190,22 +190,22 @@ copyData <- reactive({
 
 })
 
-observeEvent(input$copy_button, priority = 20,{
-  
-  if(length(input$responses_table_rows_selected)>=1 ){
-    copyData()
-  }
-  
-  showModal(
-    
-    if(length(input$responses_table_rows_selected) < 1 ){
-      modalDialog(
-        title = "Warning",
-        paste("Please select row(s)." ),easyClose = TRUE
-      )
-    })
-  
-})
+# observeEvent(input$copy_button, priority = 20,{
+#   
+#   if(length(input$responses_table_rows_selected)>=1 ){
+#     copyData()
+#   }
+#   
+#   showModal(
+#     
+#     if(length(input$responses_table_rows_selected) < 1 ){
+#       modalDialog(
+#         title = "Warning",
+#         paste("Please select row(s)." ),easyClose = TRUE
+#       )
+#     })
+#   
+# })
 
 #edit data
 observeEvent(input$edit_button, priority = 20,{
