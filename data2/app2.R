@@ -10,16 +10,19 @@ library(dplyr)
 pool <- dbPool(RSQLite::SQLite(), dbname = "db.sqlite")
 
 #Create sql lite df
-responses_df <- data.frame(row_id = character(),
-                           name = character(),
-                           sex = character(),
-                           age = character(), 
-                           comment = character(),
+transdata <- data.frame(
+                           description = character(),
+                           type = character(),
+                           amount = numeric(), 
+                           category = character(),
+                           accounts = character(),
+                           lat= numeric(),
+                           long=numeric(),
                            date = as.Date(character()),
                            stringsAsFactors = FALSE)
 
 #Create responses table in sql database
-dbWriteTable(pool, "responses_df", responses_df, overwrite = FALSE, append = TRUE)
+dbWriteTable(pool, "transdata", transdata, overwrite = FALSE, append = TRUE)
 
 #Label mandatory fields
 labelMandatory <- function(label) {
@@ -36,10 +39,7 @@ ui <- fluidPage(
     shinyjs::useShinyjs(),
     shinyjs::inlineCSS(appCSS),
     fluidRow(
-        #    actionButton("add_button", "Add", icon("plus")),
         actionButton("edit_button", "Edit", icon("edit")),
-        #    actionButton("copy_button", "Copy", icon("copy")),
-        #    actionButton("delete_button", "Delete", icon("trash-alt"))
     ),
     br(),
     fluidRow(width="100%",
@@ -47,17 +47,18 @@ ui <- fluidPage(
     )
 )
 
+
 # Server
 server <- function(input, output, session) {
     
-    #load responses_df and make reactive to inputs  
-    responses_df <- reactive({
+    #load transdata and make reactive to inputs  
+    transdata <- reactive({
         
         #make reactive to
         input$submit
         input$submit_edit
         
-        dbReadTable(pool, "responses_df")
+        dbReadTable(pool, "transdata")
         
     })  
     
@@ -123,92 +124,10 @@ server <- function(input, output, session) {
         
     })
     
-    #Add data
-    # appendData <- function(data){
-    #   quary <- sqlAppendTable(pool, "responses_df", data, row.names = FALSE)
-    #   dbExecute(pool, quary)
-    # }
-    
-    # observeEvent(input$add_button, priority = 20,{
-    #     
-    #     entry_form("submit")
-    #   
-    # })
-    
-    observeEvent(input$submit, priority = 20,{
-        
-        appendData(formData())
-        shinyjs::reset("entry_form")
-        removeModal()
-        
-    })
-    
-    #delete data
-    deleteData <- reactive({
-        
-        SQL_df <- dbReadTable(pool, "responses_df")
-        row_selection <- SQL_df[input$responses_table_rows_selected, "row_id"]
-        
-        quary <- lapply(row_selection, function(nr){
-            
-            dbExecute(pool, sprintf('DELETE FROM "responses_df" WHERE "row_id" == ("%s")', nr))
-        })
-    })
-    
-    # observeEvent(input$delete_button, priority = 20,{
-    #   
-    #   if(length(input$responses_table_rows_selected)>=1 ){
-    #     deleteData()
-    #   }
-    #   
-    #   showModal(
-    #     
-    #     if(length(input$responses_table_rows_selected) < 1 ){
-    #       modalDialog(
-    #         title = "Warning",
-    #         paste("Please select row(s)." ),easyClose = TRUE
-    #       )
-    #     })
-    # })
-    
-    #copy data
-    unique_id <- function(data){
-        replicate(nrow(data), UUIDgenerate())
-    }
-    
-    copyData <- reactive({
-        
-        SQL_df <- dbReadTable(pool, "responses_df")
-        row_selection <- SQL_df[input$responses_table_rows_selected, "row_id"] 
-        SQL_df <- SQL_df %>% filter(row_id %in% row_selection)
-        SQL_df$row_id <- unique_id(SQL_df)
-        
-        quary <- sqlAppendTable(pool, "responses_df", SQL_df, row.names = FALSE)
-        dbExecute(pool, quary)
-        
-    })
-    
-    # observeEvent(input$copy_button, priority = 20,{
-    #   
-    #   if(length(input$responses_table_rows_selected)>=1 ){
-    #     copyData()
-    #   }
-    #   
-    #   showModal(
-    #     
-    #     if(length(input$responses_table_rows_selected) < 1 ){
-    #       modalDialog(
-    #         title = "Warning",
-    #         paste("Please select row(s)." ),easyClose = TRUE
-    #       )
-    #     })
-    #   
-    # })
-    
     #edit data
     observeEvent(input$edit_button, priority = 20,{
         
-        SQL_df <- dbReadTable(pool, "responses_df")
+        SQL_df <- dbReadTable(pool, "transdata")
         
         showModal(
             if(length(input$responses_table_rows_selected) > 1 ){
@@ -236,9 +155,9 @@ server <- function(input, output, session) {
     
     observeEvent(input$submit_edit, priority = 20, {
         
-        SQL_df <- dbReadTable(pool, "responses_df")
+        SQL_df <- dbReadTable(pool, "transdata")
         row_selection <- SQL_df[input$responses_table_row_last_clicked, "row_id"] 
-        dbExecute(pool, sprintf('UPDATE "responses_df" SET "name" = ?, "sex" = ?, "age" = ?,
+        dbExecute(pool, sprintf('UPDATE "transdata" SET "name" = ?, "sex" = ?, "age" = ?,
                           "comment" = ? WHERE "row_id" = ("%s")', row_selection), 
                   param = list(input$name,
                                input$sex,
@@ -251,7 +170,7 @@ server <- function(input, output, session) {
     
     output$responses_table <- DT::renderDataTable({
         
-        table <- responses_df() %>% select(-row_id) 
+        table <- transdata() %>% select() 
         names(table) <- c("Date", "Name", "Sex", "Age", "Comment")
         table <- datatable(table, 
                            rownames = FALSE,
