@@ -6,6 +6,36 @@ library(shinyjs)
 library(uuid)
 library(dplyr)
 
+drv <- dbDriver("MySQL")
+mydb <-
+  dbConnect(
+    drv,
+    user = 'root',
+    password = 'Myskhongbiet88',
+    dbname = 'credit_card_analysis',
+    host = 'localhost'
+  )
+
+dbListTables(mydb)
+
+
+rs <-
+  dbSendQuery(
+    mydb,
+    paste0(
+      "SELECT * FROM transdata"
+    )
+  )
+
+
+
+
+
+
+
+
+
+
 #Create sql lite database
 pool <- dbPool(RSQLite::SQLite(), dbname = "db.sqlite")
 
@@ -24,6 +54,9 @@ responses_df <- data.frame(row_id = character(),
 
 #Create responses table in sql database
 dbWriteTable(pool, "responses_df", responses_df, overwrite = FALSE, append = TRUE)
+
+
+
 
 #Label mandatory fields
 labelMandatory <- function(label) {
