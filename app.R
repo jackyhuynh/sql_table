@@ -6,6 +6,9 @@ library(shinyjs)
 library(uuid)
 library(dplyr)
 
+#-------------------------------------------------------------------------------
+# MySQL Server preparation
+
 drv <- dbDriver("MySQL")
 mydb <-
   dbConnect(
@@ -16,25 +19,15 @@ mydb <-
     host = 'localhost'
   )
 
-dbListTables(mydb)
+# Get the data from the database
+rs <- dbSendQuery(mydb, "SELECT * FROM transdata")
+# to return all the row, return n=-1
+transdata <- dbFetch(rs, n=-1)
+dbClearResult(rs)
 
 
-rs <-
-  dbSendQuery(
-    mydb,
-    paste0(
-      "SELECT * FROM transdata"
-    )
-  )
-
-
-
-
-
-
-
-
-
+#-------------------------------------------------------------------------------
+# SQLITE PREPARATION
 
 #Create sql lite database
 pool <- dbPool(RSQLite::SQLite(), dbname = "db.sqlite")
@@ -55,9 +48,6 @@ responses_df <- data.frame(row_id = character(),
 #Create responses table in sql database
 dbWriteTable(pool, "responses_df", responses_df, overwrite = FALSE, append = TRUE)
 
-
-
-
 #Label mandatory fields
 labelMandatory <- function(label) {
   tagList(
@@ -72,13 +62,24 @@ appCSS <- ".mandatory_star { color: red; }"
 ui <- fluidPage(
   shinyjs::useShinyjs(),
   shinyjs::inlineCSS(appCSS),
-  fluidRow(
-    actionButton("edit_button", "Edit Category", icon("edit")),
-  ),
-  br(),
-  fluidRow(width="100%",
-    dataTableOutput("responses_table", width = "100%")
-  )
+  tabsetPanel(
+    tabPanel("SQLite",
+      br(),
+      fluidRow(
+        actionButton("edit_button", "Edit Category", icon("edit")),
+      ),
+      br(),
+      fluidRow(width="100%",
+               dataTableOutput("responses_table", width = "100%")
+      )
+    ),
+    tabPanel("MySQL",br(),
+      fluidRow(
+        actionButton("edit_button2","Edit Category",icon("edit"))),br(),
+      fluidRow(width="100%", 
+               DT::dataTableOutput("response_table_MySQL", width = "100%"))
+    )
+  ) # End Outer Tab Set
 )
 
 # Server
@@ -159,13 +160,18 @@ observeEvent(input$submit_edit, priority = 20, {
   removeModal()
 })
 
-
+# SQLite database out put
 output$responses_table <- DT::renderDataTable({
   table <- responses_df() %>% select(-row_id) 
   names(table) <- c("Date", "Description", 
                     "Amount", "Type","Category", "subCategory","Accounts", "Lat", "Long"  )
-  table <- datatable(table, 
-                     rownames = FALSE)
+  table <- datatable(table, options = list(autoWidth = TRUE))
+})
+
+# MySQL server out put
+output$response_table_MySQL <- DT::renderDataTable({
+  datatable(transdata[, c("date", "description", "amount", "type", "category", "accounts")], 
+            options = list(autoWidth = TRUE))
 })
 }
 
